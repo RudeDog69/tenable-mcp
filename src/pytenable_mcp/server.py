@@ -91,8 +91,8 @@ def get_scan(scan_id: int, history_id: int | None = None) -> dict:
     """
     def _run() -> dict:
         tio = get_client()
-        details = tio.scans.details(scan_id, history_id=history_id)
-        return _jsonable(details)
+        results = tio.scans.results(scan_id, history_id=history_id)
+        return _jsonable(results)
 
     return _safe_call(_run)
 
@@ -118,7 +118,11 @@ def get_scan_status(scan_id: int, history_id: int | None = None) -> dict:
     """Return the run status of a scan (e.g. running, completed, canceled)."""
     def _run() -> dict:
         tio = get_client()
-        status = tio.scans.status(scan_id, history_id=history_id)
+        if history_id is None:
+            status = tio.scans.status(scan_id)
+        else:
+            run = tio.scans.results(scan_id, history_id=history_id)
+            status = run.get("info", {}).get("status")
         return {"scan_id": scan_id, "status": status}
 
     return _safe_call(_run)
@@ -135,9 +139,9 @@ def get_scan_results(scan_id: int, history_id: int | None = None, limit: int = 5
     """
     def _run() -> dict:
         tio = get_client()
-        details = tio.scans.details(scan_id, history_id=history_id)
-        hosts = (details.get("hosts") or [])[:limit]
-        info = details.get("info", {})
+        results = tio.scans.results(scan_id, history_id=history_id)
+        hosts = (results.get("hosts") or [])[:limit]
+        info = results.get("info", {})
         return _jsonable(
             {
                 "scan_id": scan_id,
